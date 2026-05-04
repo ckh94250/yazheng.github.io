@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>体育成绩系统（终极精准版）</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;font-family:Microsoft YaHei}
+        body{background:#f5f7fa;padding:20px}
+        .box{max-width:1200px;margin:0 auto;background:#fff;border-radius:10px;padding:20px}
+        .login{max-width:400px;margin:60px auto;background:#fff;padding:30px;border-radius:8px;box-shadow:0 0 10px #ddd}
+        .login input{width:100%;padding:10px;margin:8px 0;border:1px solid #ccc;border-radius:5px}
+        .login button{width:100%;padding:10px;background:#e74c3c;color:#fff;border:none;border-radius:5px;cursor:pointer}
+        .tip{font-size:13px;color:#666;margin:10px 0}
+        .bar{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:20px}
+        .bar button,.bar select{padding:8px 12px;border:1px solid #ccc;border-radius:5px;cursor:pointer}
+        .bar button{background:#e74c3c;color:#fff;border:none}
+        .hide{display:none}
+        .form{background:#f8f9fa;padding:20px;border-radius:8px;margin:20px 0}
+        .form-row{margin:10px 0}
+        .form-row label{display:inline-block;width:90px}
+        .form-row input,.form-row select{padding:6px;border:1px solid #ccc;border-radius:4px}
+        textarea{width:100%;height:100px;padding:10px;border:1px solid #ccc;border-radius:5px;margin:10px 0}
+        table{width:100%;border-collapse:collapse;margin-top:20px}
+        th,td{border:1px solid #ddd;padding:8px;text-align:center}
+        th{background:#e74c3c;color:#fff}
+        .stat{margin-top:20px;text-align:center;font-size:16px}
+        .logout{background:#666 !important}
+    </style>
+</head>
+<body>
+<div class="box">
+    <div class="login" id="loginBox">
+        <h2 style="text-align:center;margin-bottom:20px">登录/注册</h2>
+        <input type="text" id="acc" placeholder="自定义账号">
+        <input type="password" id="pwd" placeholder="自定义密码">
+        <p class="tip">首次输入自动注册，下次直接登录</p>
+        <button onclick="loginSys()">登录进入</button>
+    </div>
+
+    <div id="main" class="hide">
+        <h1 style="text-align:center;margin-bottom:20px;color:#e74c3c">中考体育成绩系统</h1>
+        <div class="bar">
+            <select id="clsSel"><option value="">请选择班级</option></select>
+            <button onclick="addClass()">新增班级</button>
+            <button onclick="showImp()">批量导入学生</button>
+            <button onclick="exportCsv()">导出成绩</button>
+            <button onclick="delClass()">删除当前班级</button>
+            <button class="logout" onclick="logout()">退出登录</button>
+        </div>
+
+        <div id="impArea" class="hide">
+            <h4>每行输入一个姓名</h4>
+            <textarea id="nameArea"></textarea>
+            <button onclick="impStudent()">确认导入</button>
+            <button onclick="hideImp()">关闭</button>
+        </div>
+
+        <div class="form" id="editForm">
+            <div class="form-row"><label>姓名：</label><input type="text" id="stuName" readonly></div>
+            <div class="form-row">
+                <label>性别：</label>
+                <select id="stuSex" onchange="changeRun()"><option value="男">男</option><option value="女">女</option></select>
+            </div>
+            <div class="form-row">
+                <label>必考项目：</label><span id="runItem">1000米</span>
+                <label>成绩(如4.25)：</label><input type="number" step="0.01" id="runVal">
+            </div>
+            <div class="form-row">
+                <label>选考项目：</label>
+                <select id="selItem">
+                    <option value="跳绳">一分钟跳绳</option>
+                    <option value="跳远">立定跳远</option>
+                    <option value="实心球">投掷实心球</option>
+                    <option value="仰卧起坐">仰卧起坐</option>
+                    <option value="引体向上">引体向上</option>
+                </select>
+                <label>成绩：</label><input type="number" step="0.01" id="selVal">
+            </div>
+            <button onclick="saveStu()" style="margin-top:15px;padding:8px 20px;background:#e74c3c;color:#fff;border:none;border-radius:5px;cursor:pointer">保存学生信息</button>
+        </div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>姓名</th><th>性别</th><th>必考</th><th>成绩</th><th>得分</th>
+                    <th>选考</th><th>成绩</th><th>得分</th><th>平时分</th><th>总分</th><th>操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+
+        <div class="stat">
+            班级平均分：<span id="avg">0</span> &nbsp;&nbsp;
+            满分率：<span id="rate">0%</span>
+        </div>
+    </div>
+</div>
+
+<script>
+// ===================== 严格按你图片的评分表 =====================
+// 男生1000米 秒数
+function boy1000(sec){
+    if(sec<=173)return 120;
+    if(sec<=180)return 115;
+    if(sec<=187)return 110;
+    if(sec<=194)return 105;
+    if(sec<=201)return 100;
+    if(sec<=208)return 95;
+    if(sec<=215)return 90;
+    if(sec<=220)return 85;
+    if(sec<=225)return 80;
+    if(sec<=230)return 75;
+    if(sec<=235)return 70;
+    if(sec<=240)return 65;
+    if(sec<=245)return 60;
+    if(sec<=250)return 55;
+    if(sec<=255)return 50;
+    if(sec<=260)return 45;
+    if(sec<=265)return 40;
+    if(sec<=270)return 35;
+    if(sec<=275)return 30;
+    if(sec<=280)return 25;
+    if(sec<=285)return 20;
+    return 0;
+}
+// 女生800米 秒数
+function girl800(sec){
+    if(sec<=158)return 120;
+    if(sec<=165)return 115;
+    if(sec<=172)return 110;
+    if(sec<=179)return 105;
+    if(sec<=186)return 100;
+    if(sec<=193)return 95;
+    if(sec<=200)return 90;
+    if(sec<=205)return 85;
+    if(sec<=210)return 80;
+    if(sec<=215)return 75;
+    if(sec<=220)return 70;
+    if(sec<=225)return 65;
+    if(sec<=230)return 60;
+    if(sec<=235)return 55;
+    if(sec<=240)return 50;
+    if(sec<=245)return 45;
+    if(sec<=250)return 40;
+    if(sec<=255)return 35;
+    if(sec<=260)return 30;
+    if(sec<=265)return 25;
+    if(sec<=270)return 20;
+    return 0;
+}
+// 跳绳
+function rope(val){
+    if(val>=254)return 120;if(val>=239)return 115;if(val>=224)return 110;if(val>=209)return 105;
+    if(val>=194)return 100;if(val>=179)return 95;if(val>=164)return 90;if(val>=156)return 85;
+    if(val>=148)return 80;if(val>=140)return 75;if(val>=132)return 70;if(val>=124)return 65;
+    if(val>=116)return 60;if(val>=108)return 55;if(val>=100)return 50;if(val>=92)return 45;
+    if(val>=84)return 40;if(val>=76)return 35;if(val>=68)return 30;if(val>=60)return 25;
+    return 0;
+}
+// 跳远
+function jump(val){
+    if(val>=2.95)return 120;if(val>=2.85)return 115;if(val>=2.75)return 110;if(val>=2.65)return 105;
+    if(val>=2.55)return 100;if(val>=2.45)return 95;if(val>=2.35)return 90;if(val>=2.32)return 85;
+    if(val>=2.29)return 80;if(val>=2.26)return 75;if(val>=2.23)return 70;if(val>=2.20)return 65;
+    if(val>=2.17)return 60;if(val>=2.14)return 55;if(val>=2.11)return 50;if(val>=2.08)return 45;
+    if(val>=2.05)return 40;return 0;
+}
+// 实心球
+function ball(val){
+    if(val>=14.2)return 120;if(val>=13.4)return 115;if(val>=12.6)return 110;if(val>=11.8)return 105;
+    if(val>=11.0)return 100;if(val>=10.2)return 95;if(val>=9.4)return 90;if(val>=9.2)return 85;
+    if(val>=9.0)return 80;if(val>=8.8)return 75;if(val>=8.6)return 70;if(val>=8.4)return 65;
+    if(val>=8.2)return 60;if(val>=8.0)return 55;if(val>=7.8)return 50;if(val>=7.6)return 45;
+    if(val>=7.4)return 40;return 0;
+}
+// 仰卧起坐
+function sit(val){
+    if(val>=70)return 120;if(val>=65)return 115;if(val>=60)return 110;if(val>=55)return 105;
+    if(val>=50)return 100;if(val>=45)return 95;if(val>=40)return 90;if(val>=38)return 85;
+    if(val>=36)return 80;if(val>=34)return 75;if(val>=32)return 70;if(val>=30)return 65;
+    if(val>=28)return 60;if(val>=26)return 55;if(val>=24)return 50;if(val>=22)return 45;
+    if(val>=20)return 40;return 0;
+}
+// 引体向上
+function pull(val){
+    if(val>=23)return 120;if(val>=21)return 115;if(val>=19)return 110;if(val>=17)return 105;
+    if(val>=15)return 100;if(val>=13)return 95;if(val>=11)return 90;if(val>=10)return 85;
+    if(val>=9)return 80;if(val>=8)return 75;if(val>=7)return 70;if(val>=6)return 60;
+    if(val>=5)return 50;if(val>=4)return 40;return 0;
+}
+
+// 统一算分
+function getRunScore(sex, timeStr){
+    let arr = timeStr.toString().split('.');
+    let m = parseInt(arr[0])||0;
+    let s = parseInt((arr[1]||'0').padEnd(2,'0').substr(0,2));
+    let totalSec = m*60+s;
+    return sex==='男' ? boy1000(totalSec) : girl800(totalSec);
+}
+function getSelScore(item, val){
+    switch(item){
+        case '跳绳':return rope(val);
+        case '跳远':return jump(val);
+        case '实心球':return ball(val);
+        case '仰卧起坐':return sit(val);
+        case '引体向上':return pull(val);
+        default:return 0;
+    }
+}
+
+// ===================== 系统逻辑 =====================
+let user = '';
+let nowClass = '';
+let allData = {};
+let editIdx = null;
+
+let loginBox = document.getElementById('loginBox');
+let mainBox = document.getElementById('main');
+let accDom = document.getElementById('acc');
+let pwdDom = document.getElementById('pwd');
+let clsSel = document.getElementById('clsSel');
+let impArea = document.getElementById('impArea');
+let nameArea = document.getElementById('nameArea');
+let editForm = document.getElementById('editForm');
+let stuName = document.getElementById('stuName');
+let stuSex = document.getElementById('stuSex');
+let runItem = document.getElementById('runItem');
+let runVal = document.getElementById('runVal');
+let selItem = document.getElementById('selItem');
+let selVal = document.getElementById('selVal');
+let tableBody = document.getElementById('tableBody');
+let avgDom = document.getElementById('avg');
+let rateDom = document.getElementById('rate');
+
+function loginSys(){
+    let a = accDom.value.trim();
+    let p = pwdDom.value.trim();
+    if(!a||!p){alert('请输入账号密码');return;}
+    let userList = JSON.parse(localStorage.getItem('peUserList'))||{};
+    if(!userList[a]){
+        userList[a] = {pwd:p, data:{}};
+        localStorage.setItem('peUserList', JSON.stringify(userList));
+        alert('注册成功，已登录');
+    }else{
+        if(userList[a].pwd !== p){alert('密码错误');return;}
+    }
+    user = a;
+    allData = userList[user].data;
+    loginBox.classList.add('hide');
+    mainBox.classList.remove('hide');
+    loadClass();
+}
+
+function logout(){
+    user = ''; allData = {}; nowClass = '';
+    loginBox.classList.remove('hide');
+    mainBox.classList.add('hide');
+    accDom.value='';pwdDom.value='';
+}
+
+function saveData(){
+    let list = JSON.parse(localStorage.getItem('peUserList'))||{};
+    list[user].data = allData;
+    localStorage.setItem('peUserList', JSON.stringify(list));
+}
+
+function loadClass(){
+    clsSel.innerHTML = '<option value="">请选择班级</option>';
+    Object.keys(allData).forEach(c=>{
+        let op = document.createElement('option');
+        op.value = c; op.innerText = c;
+        clsSel.appendChild(op);
+    });
+}
+
+clsSel.onchange = function(){
+    nowClass = this.value;
+    renderTable();
+};
+
+function addClass(){
+    let n = prompt('输入班级名称');
+    if(!n)return;
+    if(!allData[n]) allData[n] = [];
+    saveData(); loadClass();
+    clsSel.value = n; nowClass = n;
+    renderTable();
+}
+
+function delClass(){
+    if(!nowClass){alert('请先选班级');return;}
+    if(!confirm('确定删除该班级所有学生？'))return;
+    delete allData[nowClass];
+    saveData(); loadClass();
+    nowClass=''; renderTable();
+}
+
+function showImp(){impArea.classList.remove('hide');}
+function hideImp(){impArea.classList.add('hide');}
+
+function impStudent(){
+    if(!nowClass){alert('请先选班级');return;}
+    let arr = nameArea.value.split('\n').map(x=>x.trim()).filter(x=>x);
+    let exist = allData[nowClass].map(s=>s.name);
+    arr.forEach(name=>{
+        if(!exist.includes(name)){
+            allData[nowClass].push({
+                name:name, sex:'男', run:'', runScore:0, sel:'跳绳', selVal:'', selScore:0, total:40
+            });
+        }
+    });
+    saveData(); renderTable();
+    nameArea.value=''; hideImp();
+}
+
+function changeRun(){
+    runItem.innerText = stuSex.value==='男' ? '1000米' : '800米';
+}
+
+// 保存学生（核心修复）
+function saveStu(){
+    let name = stuName.value.trim();
+    let sex = stuSex.value;
+    let runV = runVal.value;
+    let sItem = selItem.value;
+    let sVal = selVal.value;
+
+    if(!runV||!sVal){alert('请填好必考和选考成绩');return;}
+
+    let rScore = getRunScore(sex, runV);
+    let sScore = getSelScore(sItem, Number(sVal));
+    let total = 40 + (rScore + sScore) / 2 * 0.3;
+    total = Math.round(total*100)/100;
+
+    let stu = {
+        name:name, sex:sex, run:runV, runScore:rScore,
+        sel:sItem, selVal:sVal, selScore:sScore, total:total
+    };
+
+    if(editIdx!==null){
+        allData[nowClass][editIdx] = stu;
+    }else{
+        allData[nowClass].push(stu);
+    }
+    saveData();
+    renderTable();
+    editForm.classList.add('hide');
+    editIdx = null;
+}
+
+function renderTable(){
+    tableBody.innerHTML = '';
+    if(!nowClass||!allData[nowClass]) return;
+    let list = allData[nowClass];
+    list.forEach((s,i)=>{
+        let tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td>${s.name}</td>
+            <td>${s.sex}</td>
+            <td>${s.sex=='男'?'1000米':'800米'}</td>
+            <td>${s.run}</td>
+            <td style="color:blue;font-weight:bold">${s.runScore}</td>
+            <td>${s.sel}</td>
+            <td>${s.selVal}</td>
+            <td style="color:blue;font-weight:bold">${s.selScore}</td>
+            <td>40</td>
+            <td style="color:red;font-weight:bold">${s.total}</td>
+            <td><button onclick="editStu(${i})">编辑</button><button onclick="delStu(${i})">删除</button></td>
+        `;
+        tableBody.appendChild(tr);
+    });
+    calcStat();
+}
+
+function editStu(i){
+    editIdx = i;
+    let s = allData[nowClass][i];
+    stuName.value = s.name;
+    stuSex.value = s.sex;
+    runItem.innerText = s.sex=='男'?'1000米':'800米';
+    runVal.value = s.run;
+    selItem.value = s.sel;
+    selVal.value = s.selVal;
+    editForm.classList.remove('hide');
+}
+
+function delStu(i){
+    if(!confirm('删除？'))return;
+    allData[nowClass].splice(i,1);
+    saveData(); renderTable();
+}
+
+function calcStat(){
+    let list = allData[nowClass]||[];
+    if(!list.length){avgDom.innerText='0'; rateDom.innerText='0%';return;}
+    let sum=0; list.forEach(s=>sum+=s.total);
+    avgDom.innerText = (sum/list.length).toFixed(1);
+    let cnt=list.filter(s=>s.total>=70).length;
+    rateDom.innerText = (cnt/list.length*100).toFixed(1)+'%';
+}
+
+function exportCsv(){
+    if(!nowClass){alert('请先选班级');return;}
+    let t = '姓名,性别,必考项目,必考成绩,必考得分,选考项目,选考成绩,选考得分,平时分,总分\n';
+    allData[nowClass].forEach(s=>{
+        t += `${s.name},${s.sex},${s.sex=='男'?'1000米':'800米'},${s.run},${s.runScore},${s.sel},${s.selVal},${s.selScore},40,${s.total}\n`;
+    });
+    let blob = new Blob([t],{type:'text/csv;charset=utf-8'});
+    let a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = nowClass+'体育成绩.csv';
+    a.click();
+}
+</script>
+</body>
+</html>
